@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Xunit;
-using System.IO;
-using System.Text.RegularExpressions;
-using ApplicationUpdater;
-using System.Linq;
+﻿using ApplicationUpdater;
 using ApplicationUpdater.Processes;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using Xunit;
 
 namespace ApplicationUpdaterTests
 {
@@ -21,11 +19,14 @@ namespace ApplicationUpdaterTests
             var OldFilePath = CreateFiles("TestOld");
             var NewFilePath = CreateFiles("TestNew", true);
 
-            var model = new UpdateModel();
-
-            model.UserParams = new UserParams();
-            model.UserParams.IntepubDirectory = new DirectoryInfo(OldFilePath);
-            model.UnZipDirectory = new DirectoryInfo(NewFilePath);
+            var model = new UpdateModel
+            {
+                UserParams = new UserParams
+                {
+                    IntepubDirectory = new DirectoryInfo(OldFilePath)
+                },
+                UnZipDirectory = new DirectoryInfo(NewFilePath)
+            };
 
             var result = new CheckVersionProcess(new ConfigurationBuilder()
                                .SetBasePath(Directory.GetCurrentDirectory())
@@ -40,7 +41,26 @@ namespace ApplicationUpdaterTests
                 Directory.Delete(OldFilePath, true);
                 Directory.Delete(NewFilePath, true);
             }
-            
+
+        }
+
+        [Fact]
+        public void CheckVersionNullReferencePathTest()
+        {
+            var model = new UpdateModel
+            {
+                UserParams = new UserParams
+                {
+                    IntepubDirectory = null
+                },
+                UnZipDirectory = null
+            };
+
+            var result = new CheckVersionProcess(new ConfigurationBuilder()
+                               .SetBasePath(Directory.GetCurrentDirectory())
+                               .AddJsonFile("appsettings.json", optional: true).Build());
+
+            Assert.Throws<NullReferenceException>(() => result.Process(model));
         }
 
 
@@ -52,7 +72,7 @@ namespace ApplicationUpdaterTests
             appRootPath = Path.Combine(appRootPath, rootFileName);
 
             var fileName = "test";
-            var fileNameSecond = fileName +"2";
+            var fileNameSecond = fileName + "2";
 
             DirectoryInfo dirInfo = new DirectoryInfo(appRootPath);
 
