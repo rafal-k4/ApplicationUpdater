@@ -63,12 +63,69 @@ namespace ApplicationUpdaterTests
             Assert.Throws<NullReferenceException>(() => result.Process(model));
         }
 
+        [Fact]
+        public void CheckVersionDirectoryNotFoundTest()
+        {
+            var NotExsistinDirectorPath = CreateFiles("old", havingNoDirectory: true);
+            //var newPath = CreateFiles("new", havingNoDirectory, true);
 
-        public string CreateFiles(string rootFileName, bool isNew = false)
+            var model = new UpdateModel
+            {
+                UserParams = new UserParams
+                {
+                    IntepubDirectory = new DirectoryInfo(NotExsistinDirectorPath)
+                },
+                UnZipDirectory = new DirectoryInfo(NotExsistinDirectorPath)
+            };
+
+            var result = new CheckVersionProcess(new ConfigurationBuilder()
+                               .SetBasePath(Directory.GetCurrentDirectory())
+                               .AddJsonFile("appsettings.json", optional: true).Build());
+
+            Assert.Throws<DirectoryNotFoundException>(() => result.Process(model));
+
+        }
+
+        [Fact]
+        public void CheckVersionFilesNotFoun()
+        {
+            var DirectoryWithoutFilesPath = CreateFiles("old", havingNoFiles: true);
+
+            var model = new UpdateModel
+            {
+                UserParams = new UserParams
+                {
+                    IntepubDirectory = new DirectoryInfo(DirectoryWithoutFilesPath)
+                },
+                UnZipDirectory = new DirectoryInfo(DirectoryWithoutFilesPath)
+            };
+
+            var result = new CheckVersionProcess(new ConfigurationBuilder()
+                               .SetBasePath(Directory.GetCurrentDirectory())
+                               .AddJsonFile("appsettings.json", optional: true).Build());
+
+            try
+            {
+                Assert.Throws<Exception>(() => result.Process(model));
+            }
+            finally
+            {
+                Directory.Delete(DirectoryWithoutFilesPath);
+            }
+        }
+
+
+        public string CreateFiles(string rootFileName, bool isNew = false, bool havingNoDirectory = false, bool havingNoFiles = false)
         {
             var RootPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().CodeBase);
             Regex appPathMatcher = new Regex(@"(?<!fil)[A-Za-z]:\\+[\S\s]*?(?=\\+bin)");
             var appRootPath = Path.GetDirectoryName(appPathMatcher.Match(RootPath).Value);
+
+            if (havingNoDirectory == true)
+            {
+                return Path.Combine(appRootPath, Guid.NewGuid().ToString());
+            }
+
             appRootPath = Path.Combine(appRootPath, rootFileName);
 
             var fileName = "test";
@@ -81,6 +138,11 @@ namespace ApplicationUpdaterTests
             dirInfo.Create();
 
             var path = dirInfo.FullName;
+
+            if(havingNoFiles == true)
+            {
+                return path;
+            }
 
             //new version of app contains Parent folder app, from which all files are copied to the target application directory
             if (isNew)
