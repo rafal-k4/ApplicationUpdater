@@ -30,7 +30,7 @@ namespace ApplicationUpdaterTests
 
             var result = new CheckVersionProcess(new ConfigurationBuilder()
                                .SetBasePath(Directory.GetCurrentDirectory())
-                               .AddJsonFile("appsettings.json", optional: true).Build()).Process(model);
+                               .AddJsonFile("appsettings.json", optional: true).Build(),null).Process(model);
 
             try
             {
@@ -58,7 +58,7 @@ namespace ApplicationUpdaterTests
 
             var result = new CheckVersionProcess(new ConfigurationBuilder()
                                .SetBasePath(Directory.GetCurrentDirectory())
-                               .AddJsonFile("appsettings.json", optional: true).Build());
+                               .AddJsonFile("appsettings.json", optional: true).Build(), null);
 
             Assert.Throws<NullReferenceException>(() => result.Process(model));
         }
@@ -80,7 +80,7 @@ namespace ApplicationUpdaterTests
 
             var result = new CheckVersionProcess(new ConfigurationBuilder()
                                .SetBasePath(Directory.GetCurrentDirectory())
-                               .AddJsonFile("appsettings.json", optional: true).Build());
+                               .AddJsonFile("appsettings.json", optional: true).Build(), null);
 
             Assert.Throws<DirectoryNotFoundException>(() => result.Process(model));
 
@@ -102,7 +102,7 @@ namespace ApplicationUpdaterTests
 
             var result = new CheckVersionProcess(new ConfigurationBuilder()
                                .SetBasePath(Directory.GetCurrentDirectory())
-                               .AddJsonFile("appsettings.json", optional: true).Build());
+                               .AddJsonFile("appsettings.json", optional: true).Build(), null);
 
             try
             {
@@ -131,7 +131,7 @@ namespace ApplicationUpdaterTests
 
             var result = new CheckVersionProcess(new ConfigurationBuilder()
                                .SetBasePath(Directory.GetCurrentDirectory())
-                               .AddJsonFile("appsettings.json", optional: true).Build());
+                               .AddJsonFile("appsettings.json", optional: true).Build(), null);
 
             result.ProcessEvent += ResultProcessEventMock;
             result.ConfirmEvent += ResultConfirmEventMockContinueConfirmation;
@@ -180,7 +180,7 @@ namespace ApplicationUpdaterTests
 
             var result = new CheckVersionProcess(new ConfigurationBuilder()
                                .SetBasePath(Directory.GetCurrentDirectory())
-                               .AddJsonFile("appsettings.json", optional: true).Build());
+                               .AddJsonFile("appsettings.json", optional: true).Build(), null);
 
             result.ProcessEvent += ResultProcessEventMockNewerFile;
             result.ConfirmEvent += ResultConfirmEventMockContinueConfirmation;
@@ -201,6 +201,50 @@ namespace ApplicationUpdaterTests
             var obj = sender as ConsoleWriteProcess;
             string expectedMessage = "A newer file is loaded in the destination directory";
             Assert.Contains(expectedMessage, obj.Msg);
+        }
+
+
+        [Fact]
+        public void CheckVersionContinuationDisagreementTest()
+        {
+            var NewFilePath = CreateFiles("TestNew", true);
+            var OldFilePath = CreateFiles("TestOld");
+
+            var model = new UpdateModel
+            {
+                UserParams = new UserParams
+                {
+                    IntepubDirectory = new DirectoryInfo(OldFilePath)
+                },
+                UnZipDirectory = new DirectoryInfo(NewFilePath)
+            };
+
+            var environmentManagerMock = new EnvironmentManagerMock();
+
+            var result = new CheckVersionProcess(new ConfigurationBuilder()
+                               .SetBasePath(Directory.GetCurrentDirectory())
+                               .AddJsonFile("appsettings.json", optional: true).Build(), environmentManagerMock);
+
+
+            result.ProcessEvent += ResultProcessEventMockNewerFile;
+            result.ConfirmEvent += ResultConfirmEventContinuingCancellation;
+
+            try
+            {
+                result.Process(model);
+                Assert.True(environmentManagerMock.Counter > 0);
+            }
+            finally
+            {
+                Directory.Delete(NewFilePath);
+                Directory.Delete(OldFilePath);
+            }
+        }
+
+        private void ResultConfirmEventContinuingCancellation(object sender, EventArgs e)
+        {
+            var obj = sender as ProcessConfirmation;
+            obj.Key = ConsoleKey.N;
         }
 
         public string CreateFiles(string rootFileName, bool isNew = false, bool havingNoDirectory = false, bool havingNoFiles = false, bool missFiles = false)
