@@ -66,7 +66,7 @@ namespace ApplicationUpdaterTests
         [Fact]
         public void CheckVersionDirectoryNotFoundTest()
         {
-            var NotExsistingDirectorPath = CreateFiles("old", havingNoDirectory: true);
+            var NotExsistingDirectorPath = CreateFiles("random", havingNoDirectory: true);
             //var newPath = CreateFiles("new", havingNoDirectory, true);
 
             var model = new UpdateModel
@@ -118,7 +118,7 @@ namespace ApplicationUpdaterTests
         public void CheckVersionNoFileInNewAppTest()
         {
             var oldPath = CreateFiles("TestOld");
-            var NewPathWithoutFile = CreateFiles("TestNew", missFiles: true);
+            var NewPathWithoutFile = CreateFiles("TestNew",isNew: true, missFiles: true);
 
             var model = new UpdateModel
             {
