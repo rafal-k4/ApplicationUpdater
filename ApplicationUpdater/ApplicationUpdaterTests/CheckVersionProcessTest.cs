@@ -34,7 +34,7 @@ namespace ApplicationUpdaterTests
 
             try
             {
-                Assert.Equal("[Checking the files] " + Consts.ProcesEventResult.Successful, result.Result);
+                Assert.Contains(Consts.ProcesEventResult.Successful, result.Result);
             }
             finally
             {
@@ -87,7 +87,7 @@ namespace ApplicationUpdaterTests
         }
 
         [Fact]
-        public void CheckVersionFilesNotFoun()
+        public void CheckVersionFilesNotFound()
         {
             var DirectoryWithoutFilesPath = CreateFiles("old", havingNoFiles: true);
 
@@ -133,21 +133,74 @@ namespace ApplicationUpdaterTests
                                .SetBasePath(Directory.GetCurrentDirectory())
                                .AddJsonFile("appsettings.json", optional: true).Build());
 
-            result.ProcessEvent += Result_ProcessEventMock;
+            result.ProcessEvent += ResultProcessEventMock;
+            result.ConfirmEvent += ResultConfirmEventMockContinueConfirmation;
 
-            result.Process(model);
-
-
-
+            try
+            {
+                result.Process(model);
+            }
+            finally
+            {
+                Directory.Delete(oldPath, true);
+                Directory.Delete(NewPathWithoutFile, true);
+            }
         }
 
-        private void Result_ProcessEventMock(object sender, EventArgs e)
+        private void ResultConfirmEventMockContinueConfirmation(object sender, EventArgs e)
+        {
+            var obj = sender as ProcessConfirmation;
+            obj.Key = ConsoleKey.Y;
+        }
+
+        private void ResultProcessEventMock(object sender, EventArgs e)
         {
             var item = sender as ConsoleWriteProcess;
             var expectedMessage = @"No file in the new application \test.txt";
             Assert.Contains(expectedMessage, item.Msg);
+        }
+
+
+
+        [Fact]
+        public void CheckVersionNewerFileInOldApp()
+        {
+            var NewFilePath = CreateFiles("TestNew", true);
+            var OldFilePath = CreateFiles("TestOld");
             
-            //Assert.Equal(expectedMessage, item.Msg);
+
+            var model = new UpdateModel
+            {
+                UserParams = new UserParams
+                {
+                    IntepubDirectory = new DirectoryInfo(OldFilePath)
+                },
+                UnZipDirectory = new DirectoryInfo(NewFilePath)
+            };
+
+            var result = new CheckVersionProcess(new ConfigurationBuilder()
+                               .SetBasePath(Directory.GetCurrentDirectory())
+                               .AddJsonFile("appsettings.json", optional: true).Build());
+
+            result.ProcessEvent += ResultProcessEventMockNewerFile;
+            result.ConfirmEvent += ResultConfirmEventMockContinueConfirmation;
+
+            try
+            {
+                result.Process(model);
+            }
+            finally
+            {
+                Directory.Delete(OldFilePath, true);
+                Directory.Delete(NewFilePath, true);
+            }
+        }
+
+        private void ResultProcessEventMockNewerFile(object sender, EventArgs e)
+        {
+            var obj = sender as ConsoleWriteProcess;
+            string expectedMessage = "A newer file is loaded in the destination directory";
+            Assert.Contains(expectedMessage, obj.Msg);
         }
 
         public string CreateFiles(string rootFileName, bool isNew = false, bool havingNoDirectory = false, bool havingNoFiles = false, bool missFiles = false)
