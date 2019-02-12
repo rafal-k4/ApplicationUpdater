@@ -236,8 +236,8 @@ namespace ApplicationUpdaterTests
             }
             finally
             {
-                Directory.Delete(NewFilePath);
-                Directory.Delete(OldFilePath);
+                Directory.Delete(NewFilePath, true);
+                Directory.Delete(OldFilePath, true);
             }
         }
 
