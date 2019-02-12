@@ -66,16 +66,16 @@ namespace ApplicationUpdaterTests
         [Fact]
         public void CheckVersionDirectoryNotFoundTest()
         {
-            var NotExsistinDirectorPath = CreateFiles("old", havingNoDirectory: true);
+            var NotExsistingDirectorPath = CreateFiles("old", havingNoDirectory: true);
             //var newPath = CreateFiles("new", havingNoDirectory, true);
 
             var model = new UpdateModel
             {
                 UserParams = new UserParams
                 {
-                    IntepubDirectory = new DirectoryInfo(NotExsistinDirectorPath)
+                    IntepubDirectory = new DirectoryInfo(NotExsistingDirectorPath)
                 },
-                UnZipDirectory = new DirectoryInfo(NotExsistinDirectorPath)
+                UnZipDirectory = new DirectoryInfo(NotExsistingDirectorPath)
             };
 
             var result = new CheckVersionProcess(new ConfigurationBuilder()
@@ -114,8 +114,43 @@ namespace ApplicationUpdaterTests
             }
         }
 
+        [Fact]
+        public void CheckVersionNoFileInNewAppTest()
+        {
+            var oldPath = CreateFiles("TestOld");
+            var NewPathWithoutFile = CreateFiles("TestNew", missFiles: true);
 
-        public string CreateFiles(string rootFileName, bool isNew = false, bool havingNoDirectory = false, bool havingNoFiles = false)
+            var model = new UpdateModel
+            {
+                UserParams = new UserParams
+                {
+                    IntepubDirectory = new DirectoryInfo(oldPath)
+                },
+                UnZipDirectory = new DirectoryInfo(NewPathWithoutFile)
+            };
+
+            var result = new CheckVersionProcess(new ConfigurationBuilder()
+                               .SetBasePath(Directory.GetCurrentDirectory())
+                               .AddJsonFile("appsettings.json", optional: true).Build());
+
+            result.ProcessEvent += Result_ProcessEventMock;
+
+            result.Process(model);
+
+
+
+        }
+
+        private void Result_ProcessEventMock(object sender, EventArgs e)
+        {
+            var item = sender as ConsoleWriteProcess;
+            var expectedMessage = @"No file in the new application \test.txt";
+            Assert.Contains(expectedMessage, item.Msg);
+            
+            //Assert.Equal(expectedMessage, item.Msg);
+        }
+
+        public string CreateFiles(string rootFileName, bool isNew = false, bool havingNoDirectory = false, bool havingNoFiles = false, bool missFiles = false)
         {
             var RootPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().CodeBase);
             Regex appPathMatcher = new Regex(@"(?<!fil)[A-Za-z]:\\+[\S\s]*?(?=\\+bin)");
@@ -151,7 +186,11 @@ namespace ApplicationUpdaterTests
                 dirInfo = dirInfo.GetDirectories().Where(x => x.Name == "app").First();
             }
 
-            File.WriteAllLines(Path.Combine(dirInfo.FullName, fileNameSecond + ".txt"), new[] { "" });
+            if(missFiles == false)
+            {
+                File.WriteAllLines(Path.Combine(dirInfo.FullName, fileName + ".txt"), new[] { "" });
+            }
+            
 
             dirInfo.CreateSubdirectory(fileNameSecond);
             var subDirInfo = dirInfo.GetDirectories().Where(x => x.Name == fileNameSecond).First();

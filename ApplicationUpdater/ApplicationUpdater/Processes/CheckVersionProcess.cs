@@ -42,7 +42,7 @@ namespace ApplicationUpdater.Processes
 
                 if (file == null)
                 {
-                    UpdateProcess($"No file in the new application {inetpubFile.FullName.Replace(model.UserParams.IntepubDirectory.FullName,string.Empty)}");
+                    UpdateProcess($"No file in the new application {fileNameToCheck}");
                     error = true;
                     continue;
                 }
