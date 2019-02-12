@@ -2,7 +2,7 @@
   "profiles": {
     "ApplicationUpdater": {
       "commandName": "Project",
-      "commandLineArgs": "Orlen \"D:\\Pobrane\\Selgros_PG_SPG_QAS_PL_590_artifacts.zip\" \"D:/\" \"D:\\Projects\\Selgros\\PG\\trunk\\SelgrosPG.Presentation\\bin\\Release\\Publish\\\\\" 96.4033 false"
+      "commandLineArgs": "Selgros \"C:\\MyData\\Projects\\ApplicationUpdater\\FileTests\\New\\App.zip\" \"C:\\MyData\\Projects\\ApplicationUpdater\\FileTests\\Backup\" \"C:\\MyData\\Projects\\ApplicationUpdater\\FileTests\\Old\" 96.4033 false"
     }
   }
 }
